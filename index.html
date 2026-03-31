@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAX | Безопасный шлюз</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-mono { font-family: 'Courier Prime', monospace; }
+
+        /* Жесткий скример */
+        .screamer-active { animation: screamerFlash 0.08s infinite; }
+        @keyframes screamerFlash {
+            0% { background-color: #ff0000; filter: invert(0) brightness(1.2); }
+            25% { background-color: #000000; filter: invert(1) brightness(0.9); }
+            50% { background-color: #ff1744; filter: invert(0.5) brightness(1.5); }
+            75% { background-color: #000000; filter: invert(1) brightness(1.1); }
+            100% { background-color: #ff0000; filter: invert(0) brightness(1.2); }
+        }
+
+        /* Финальный скример */
+        .final-screamer {
+            animation: hardcoreScreamer 0.08s infinite;
+        }
+        @keyframes hardcoreScreamer {
+            0% { filter: invert(1) contrast(300%) hue-rotate(90deg); transform: scale(1.05) translate(5px, 5px); }
+            25% { filter: invert(0) contrast(100%); transform: scale(1) translate(-5px, -5px); }
+            50% { filter: invert(1) contrast(300%) hue-rotate(180deg) brightness(2); transform: scale(1.1) translate(0, 5px); }
+            75% { filter: invert(0) contrast(100%); transform: scale(1) translate(5px, -5px); }
+            100% { filter: invert(1) contrast(300%) hue-rotate(270deg); transform: scale(1.05) translate(-5px, 5px); }
+        }
+
+        /* Интерфейс MAX */
+        #max-app {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            background-color: #ffffff;
+            flex-direction: column;
+        }
+
+        /* Анимация набора текста (три точки) */
+        .typing-dots span {
+            animation: typing 1.4s infinite both;
+            height: 6px;
+            width: 6px;
+            background-color: #6b7280;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Анимация тряски экрана для двойного пранка */
+        .shake-active {
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) infinite;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 2px, 0); }
+            20%, 80% { transform: translate3d(4px, -2px, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 4px, 0); }
+            40%, 60% { transform: translate3d(6px, -4px, 0); }
+        }
+
+        /* Сканирующая линия хакерского экрана */
+        .scanline {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(0deg, rgba(255,0,0,0) 0%, rgba(255,0,0,0.2) 50%, rgba(255,0,0,0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 5s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        /* Фейковые окна разрешений (Chrome/Safari стиль) */
+        .fake-popup {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            background: #ffffff;
+            color: #202124;
+            width: 320px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.2);
+            z-index: 10000;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideDown 0.2s ease-out forwards;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @media (max-width: 600px) {
+            .fake-popup {
+                left: 50%;
+                top: 16px;
+                transform: translateX(-50%);
+                width: 92%;
+                max-width: 360px;
+            }
+            @keyframes slideDown {
+                from { transform: translate(-50%, -20px); opacity: 0; }
+                to { transform: translate(-50%, 0); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <!-- 1. Фальшивая загрузка -->
+    <div id="fake-loader" class="text-center w-full h-screen bg-gradient-to-b from-blue-50 to-blue-100 flex flex-col items-center justify-center px-4">
+        <div class="mb-8">
+            <img src="https://logo-teka.com/wp-content/uploads/2025/07/max-messenger-sign-logo.svg" alt="MAX logo" class="h-20 w-auto mx-auto mb-4" />
+        </div>
+        <div class="inline-block w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-6"></div>
+        <h1 class="text-2xl font-bold text-gray-800">MAX Messenger</h1>
+        <p class="text-gray-500 text-sm mt-3">Подключение к защищённому серверу...</p>
+    </div>
+
+    <!-- 2. Интерфейс мессенджера MAX (появляется после скримера) -->
+    <div id="max-app">
+        <!-- Шапка MAX -->
+        <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex items-center px-4 py-3 shrink-0">
+            <img src="https://logo-teka.com/wp-content/uploads/2025/07/max-messenger-sign-logo.svg" alt="MAX logo" class="h-8 w-auto mr-3" />
+            <div class="flex-1">
+                <h1 class="text-base font-bold text-gray-900 leading-tight">MAX Messenger</h1>
+                <p class="text-xs text-gray-500 font-medium">Онлайн</p>
+            </div>
+        </header>
+
+        <!-- Рабочая область чата -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Сайдбар (скрыт на мобилках) -->
+            <div class="hidden md:flex flex-col w-72 bg-white border-r border-gray-200 shrink-0">
+                <div class="p-3 border-b border-gray-100">
+                    <input type="text" placeholder="Поиск..." class="w-full bg-gray-100 border-0 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400" disabled>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                    <!-- Активный чат -->
+                    <div class="flex items-center p-3 bg-blue-50 border-l-4 border-blue-600 cursor-pointer hover:bg-blue-75">
+                        <div class="w-12 h-12 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                            <img src="https://logo-teka.com/wp-content/uploads/2025/07/max-messenger-sign-logo.svg" alt="MAX" class="w-full h-full" />
+                        </div>
+                        <div class="ml-3 flex-1 overflow-hidden">
+                            <h3 class="font-bold text-gray-900 text-sm truncate">MAX Messenger</h3>
+                            <p class="text-xs text-gray-500 truncate" id="sidebar-preview">Печатает...</p>
+                        </div>
+                        <div class="w-2 h-2 bg-green-500 rounded-full ml-2 flex-shrink-0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Зона сообщений -->
+            <div class="flex-1 flex flex-col bg-white relative" style="background-image: url('data:image/svg+xml,%3Csvg width=\'30\' height=\'30\' viewBox=\'0 0 30 30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'2\' fill=\'%23e5e7eb\' opacity=\'0.5\'/%3E%3Ccircle cx=\'15\' cy=\'15\' r=\'2\' fill=\'%23e5e7eb\' opacity=\'0.5\'/%3E%3Ccircle cx=\'27\' cy=\'27\' r=\'2\' fill=\'%23e5e7eb\' opacity=\'0.5\'/%3E%3Ccircle cx=\'27\' cy=\'3\' r=\'2\' fill=\'%23e5e7eb\' opacity=\'0.5\'/%3E%3Ccircle cx=\'3\' cy=\'27\' r=\'2\' fill=\'%23e5e7eb\' opacity=\'0.5\'/%3E%3C/svg%3E'); background-size: 30px 30px;">
+
+                <div class="flex-1 overflow-y-auto p-4 flex flex-col justify-end space-y-3">
+                    <!-- Индикатор печати -->
+                    <div id="typing-indicator" class="flex items-start mb-2 max-w-[85%]">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 mr-2 mt-1 flex items-center justify-center overflow-hidden">
+                            <img src="https://logo-teka.com/wp-content/uploads/2025/07/max-messenger-sign-logo.svg" alt="MAX" class="w-full h-full" />
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center h-10">
+                            <div class="typing-dots flex items-center h-full"><span></span><span></span><span></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Само сообщение -->
+                    <div id="troll-message" class="hidden items-start mb-2 max-w-[90%] md:max-w-[70%]">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 mr-2 mt-1 flex items-center justify-center overflow-hidden">
+                            <img src="https://logo-teka.com/wp-content/uploads/2025/07/max-messenger-sign-logo.svg" alt="MAX" class="w-full h-full" />
+                        </div>
+                        <div class="bg-gray-100 p-4 rounded-2xl rounded-tl-none shadow-sm">
+                            <h4 class="text-gray-900 font-bold text-sm mb-2">MAX Messenger</h4>
+                            <p class="text-gray-800 text-base leading-relaxed">
+                                Привет! 👋<br><br>
+                                У тебя есть непроверенные уведомления. Кликни сюда, чтобы открыть важные документы.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Фейковое поле ввода и кнопка -->
+                <div class="bg-white p-4 border-t border-gray-200 shrink-0">
+                    <button id="trap-btn" onclick="triggerDoublePrank()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow text-base">
+                        Вернуться в Telegram
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Жесткий экран стиллера/перехвата -->
+    <div id="double-prank-modal" class="hidden fixed inset-0 bg-[#050000] z-50 flex-col w-full h-full text-red-500 font-mono relative overflow-hidden p-6 md:p-12">
+        <div class="scanline"></div>
+        
+        <div id="hack-console" class="w-full max-w-4xl mx-auto flex flex-col h-full z-10">
+            <div class="border-b border-red-900 pb-4 mb-6 flex justify-between items-end shrink-0">
+                <h1 class="text-2xl md:text-4xl font-black uppercase tracking-widest text-red-600 animate-pulse">Critical: Session Hijacked</h1>
+                <span class="text-red-800 text-sm hidden md:block">AUTH_TOKEN_EXTRACTED</span>
+            </div>
+
+            <!-- min-h-0 здесь решает проблему "расползания" флекс-контейнера при добавлении логов -->
+            <div class="flex-1 overflow-y-auto relative min-h-0" id="hack-logs-container">
+                <div id="hack-logs" class="space-y-2 text-sm md:text-base text-red-400 pb-4">
+                    <!-- Сюда будут падать логи взлома -->
+                </div>
+            </div>
+
+            <div id="hack-progress-container" class="mt-4 shrink-0">
+                <div class="flex justify-between text-xs md:text-sm mb-2 text-red-600 font-bold uppercase">
+                    <span id="hack-action-text">Инициализация переноса прав администратора...</span>
+                    <span id="hack-progress-text">0%</span>
+                </div>
+                <div class="w-full bg-red-950 h-2 border border-red-900">
+                    <div id="hack-progress-bar" class="bg-red-600 h-full w-0 transition-all duration-75"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startApp() {
+            setTimeout(() => {
+                document.getElementById('fake-loader').style.display = 'none';
+                document.getElementById('max-app').style.display = 'flex';
+
+                setTimeout(() => {
+                    document.getElementById('typing-indicator').style.display = 'none';
+                    document.getElementById('troll-message').style.display = 'flex';
+                    document.getElementById('sidebar-preview').innerText = 'Новое важное сообщение...';
+                }, 2500);
+            }, 3000);
+        }
+
+        // Запускаем приложение
+        startApp();
+
+        // Двойной пранк по кнопке
+        function triggerDoublePrank() {
+            const btn = document.getElementById('trap-btn');
+            btn.innerHTML = 'FATAL ERROR';
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-red-600');
+            
+            // Начинаем трясти экран
+            document.body.classList.add('shake-active');
+
+            // Через 1 секунду открываем экран хакера
+            setTimeout(() => {
+                document.getElementById('max-app').style.display = 'none';
+                document.body.classList.remove('shake-active');
+                
+                const hackModal = document.getElementById('double-prank-modal');
+                hackModal.style.display = 'flex';
+                document.body.style.backgroundColor = '#050000';
+
+                startHackSimulation();
+            }, 800);
+        }
+
+        function startHackSimulation() {
+            const logsContainer = document.getElementById('hack-logs');
+            const logs = [
+                "> Установка TCP соединения с хостом...",
+                "> Обход защиты браузера (Sandbox Escape)... УСПЕШНО",
+                "> Идентификация локальных файлов cookie...",
+                "<span class='text-red-500 font-bold'>[!] Обнаружена активная сессия Telegram Desktop/Web</span>",
+                "> Дамп директории tdata...",
+                "<span class='text-red-500 font-bold'>[!] Извлечение токена авторизации... УСПЕШНО</span>",
+                "> Синхронизация контактов и списка каналов...",
+                "> Поиск каналов с правами владельца (Owner)...",
+                "<span class='text-red-500 font-bold'>[!] Найден 1 канал. Инициализация запроса на смену владельца...</span>"
+            ];
+
+            let logIndex = 0;
+            
+            // Печатаем логи один за другим
+            let logInterval = setInterval(() => {
+                if (logIndex < logs.length) {
+                    const p = document.createElement('p');
+                    p.innerHTML = logs[logIndex];
+                    logsContainer.appendChild(p);
+                    logIndex++;
+                    // Скроллим вниз при добавлении каждого лога
+                    const container = document.getElementById('hack-logs-container');
+                    if(container) container.scrollTop = container.scrollHeight;
+                } else {
+                    clearInterval(logInterval);
+                    startProgressBar();
+                }
+            }, 600);
+        }
+
+        function startProgressBar() {
+            let progress = 0;
+            let barEl = document.getElementById('hack-progress-bar');
+            let textEl = document.getElementById('hack-progress-text');
+            let actionEl = document.getElementById('hack-action-text');
+
+            let progressInterval = setInterval(() => {
+                progress += Math.floor(Math.random() * 8) + 1;
+                if (progress >= 100) progress = 100;
+
+                barEl.style.width = progress + '%';
+                textEl.innerText = progress + '%';
+
+                if (progress > 30 && progress < 60) {
+                    actionEl.innerText = "Экспорт приватных ключей и переписок...";
+                } else if (progress >= 60 && progress < 90) {
+                    actionEl.innerText = "Удаление резервных копий...";
+                    actionEl.classList.add('text-red-500', 'animate-pulse');
+                } else if (progress === 100) {
+                    clearInterval(progressInterval);
+                    actionEl.innerText = "ОЖИДАНИЕ СИСТЕМНЫХ РАЗРЕШЕНИЙ...";
+                    
+                    // Запускаем фейковые попапы
+                    setTimeout(showNextPopup, 800);
+                }
+            }, 200);
+        }
+
+        // Логика фейковых попапов (Chrome-style)
+        const popupRequests = [
+            { id: "camera", text: "Использование вашей камеры" },
+            { id: "mic", text: "Использование вашего микрофона" },
+            { id: "location", text: "Данные о вашем местоположении" },
+            { id: "telegram_keys", text: "Доступ к системным файлам и ключам шифрования" }
+        ];
+        let currentPopup = 0;
+
+        function showNextPopup() {
+            if (currentPopup >= popupRequests.length) {
+                // Финал: меняем текст и вырубаем жесткий скример
+                document.getElementById('hack-action-text').innerText = "КРИТИЧЕСКИЙ СБОЙ СИСТЕМЫ. ИНИЦИАЛИЗАЦИЯ УНИЧТОЖЕНИЯ...";
+                
+                setTimeout(() => {
+                    // Включаем хаотичное мерцание экрана
+                    document.body.classList.add('final-screamer');
+                    
+                    setTimeout(() => {
+                        // Очищаем экран в абсолютный ноль (черный экран смерти)
+                        document.body.classList.remove('final-screamer');
+                        document.body.innerHTML = '';
+                        document.body.style.backgroundColor = '#000000';
+                    }, 1500); // 1.5 секунды паники
+                }, 500);
+                
+                return;
+            }
+
+            const req = popupRequests[currentPopup];
+            const popupEl = document.createElement('div');
+            popupEl.className = 'fake-popup';
+            popupEl.innerHTML = `
+                <div class="text-gray-500 pt-1 flex-shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[13px] leading-tight mb-2 text-gray-800 font-sans"><b>max-messenger.ru</b> запрашивает разрешение на:</p>
+                    <p class="text-[14px] mb-4 text-black font-medium font-sans">${req.text}</p>
+                    <div class="flex justify-end gap-2 text-[13px] font-medium font-sans">
+                        <button class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 text-gray-700 transition-colors" onclick="handlePopupClick('${req.id}', 'block', this)">Блокировать</button>
+                        <button class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" onclick="handlePopupClick('${req.id}', 'allow', this)">Разрешить</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popupEl);
+        }
+
+        function handlePopupClick(id, action, btn) {
+            btn.closest('.fake-popup').remove();
+            
+            const logsContainer = document.getElementById('hack-logs');
+            const p = document.createElement('p');
+            
+            // Самое страшное: если жмет "Блокировать", мы пишем, что взломали доступ
+            if (action === 'block') {
+                p.innerHTML = `<span class='text-red-500 font-bold'>[!] Запрос [${id}] отклонен пользователем. ОБХОД ЗАЩИТЫ... ДОСТУП ПРЕДОСТАВЛЕН ПРИНУДИТЕЛЬНО.</span>`;
+            } else {
+                p.innerHTML = `<span class='text-green-500 font-bold'>[+] Права [${id}] успешно предоставлены пользователем.</span>`;
+            }
+            logsContainer.appendChild(p);
+            
+            // Скроллим консоль вниз
+            const container = document.getElementById('hack-logs-container');
+            if(container) container.scrollTop = container.scrollHeight;
+
+            currentPopup++;
+            setTimeout(showNextPopup, 400); // Спавним следующий попап через 0.4 сек
+        }
+    </script>
+</body>
+</html>
